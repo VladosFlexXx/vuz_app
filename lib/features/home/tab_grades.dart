@@ -53,7 +53,6 @@ class _GradesTabState extends State<GradesTab> {
               children: [
                 UpdateBanner(repo: repo),
                 const SizedBox(height: 12),
-
                 if (courses.isEmpty && !repo.loading) ...const [
                   SizedBox(height: 120),
                   Center(child: Text('Пока нет данных по оценкам')),
@@ -80,6 +79,7 @@ class _GradeCard extends StatelessWidget {
     final percent = course.percent;
     final range = course.range;
 
+    final hasGrade = grade != null && grade.trim().isNotEmpty;
     final hasLink = course.courseUrl != null && course.courseUrl!.trim().isNotEmpty;
 
     return Card(
@@ -104,20 +104,32 @@ class _GradeCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                course.courseName,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w900,
+              // ✅ ШАПКА: название слева, оценка справа
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(
+                      course.courseName,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w900,
+                          ),
                     ),
+                  ),
+                  if (hasGrade) ...[
+                    const SizedBox(width: 10),
+                    _GradeBadge(value: grade!.trim()),
+                  ],
+                ],
               ),
+
               const SizedBox(height: 10),
 
+              // ✅ Под названием больше НЕ показываем "Оценка", чтобы не было каши.
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
                 children: [
-                  if (grade != null && grade.isNotEmpty)
-                    _Pill(label: 'Оценка', value: grade),
                   if (percent != null && percent.isNotEmpty)
                     _Pill(label: 'Процент', value: percent),
                   if (range != null && range.isNotEmpty)
@@ -125,8 +137,8 @@ class _GradeCard extends StatelessWidget {
                 ],
               ),
 
-              // если основных полей нет — покажем хоть что-то
-              if ((grade == null || grade.isEmpty) &&
+              // если вообще нечего показать — покажем fallback
+              if (!hasGrade &&
                   (percent == null || percent.isEmpty) &&
                   (range == null || range.isEmpty)) ...[
                 const SizedBox(height: 8),
@@ -168,6 +180,48 @@ class _GradeCard extends StatelessWidget {
 
     if (entries.isEmpty) return 'Нет данных';
     return entries.map((e) => '${e.key}: ${e.value}').join(' • ');
+  }
+}
+
+class _GradeBadge extends StatelessWidget {
+  final String value;
+
+  const _GradeBadge({required this.value});
+
+  bool _looksNumeric(String s) {
+    // 5, 4, 3, 2 или типа 85%, 7.5
+    final v = s.replaceAll(',', '.').trim();
+    final n = double.tryParse(v.replaceAll('%', '').trim());
+    return n != null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    final isNumeric = _looksNumeric(value);
+
+    final bg = isNumeric ? cs.primaryContainer : cs.secondaryContainer;
+    final fg = isNumeric ? cs.onPrimaryContainer : cs.onSecondaryContainer;
+
+    return Container(
+      constraints: const BoxConstraints(minWidth: 44),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: fg.withOpacity(0.12)),
+      ),
+      child: Text(
+        value,
+        textAlign: TextAlign.center,
+        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w900,
+              color: fg,
+              height: 1.0,
+            ),
+      ),
+    );
   }
 }
 
