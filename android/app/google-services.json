@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "530436436094",
+    "project_id": "vuz-app",
+    "storage_bucket": "vuz-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:530436436094:android:9ba8a9259e9ae6e0e3282f",
+        "android_client_info": {
+          "package_name": "com.example.vuz_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDoaW7f-O090k5nDZfeZD_7MtHCaQMjYBo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
