@@ -1,12 +1,8 @@
-name: Build APK (Beta) + Release on tags
+name: Build APK + Release on tags
 
 on:
   workflow_dispatch:
     inputs:
-      create_prerelease:
-        description: "Create GitHub prerelease (only works when running on a tag)"
-        required: false
-        default: "true"
       split_per_abi:
         description: "Build split-per-abi APKs"
         required: false
@@ -58,20 +54,23 @@ jobs:
           cp build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk artifacts/EIOS-${{ github.ref_name }}-armeabi-v7a.apk
           cp build/app/outputs/flutter-apk/app-x86_64-release.apk artifacts/EIOS-${{ github.ref_name }}-x86_64.apk
 
-      # ✅ Beta: всегда можно скачать APK из Actions
+      # APK всегда можно скачать из Actions
       - name: Upload APK artifact (for Beta / manual runs)
         uses: actions/upload-artifact@v4
         with:
           name: EIOS-APK-${{ github.ref_name }}
           path: artifacts/*
 
-      # ✅ Release: только если это пуш тега vX.Y.Z
+      # Release: при пуше тега vX.Y.Z создаём полноценный релиз и отмечаем как Latest
       - name: Create GitHub Release and upload APK(s) (tags only)
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
           files: artifacts/*
           generate_release_notes: true
-          prerelease: true
+          prerelease: false
+          make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
