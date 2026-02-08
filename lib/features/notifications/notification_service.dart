@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -36,7 +37,11 @@ class PushRegisterResult {
   final bool ok;
   final int? statusCode;
   final String message;
-  const PushRegisterResult({required this.ok, required this.message, this.statusCode});
+  const PushRegisterResult({
+    required this.ok,
+    required this.message,
+    this.statusCode,
+  });
 }
 
 class NotificationService {
@@ -52,6 +57,8 @@ class NotificationService {
   /// Дефолт удобен для эмулятора Android.
   /// На реальном телефоне это НЕ сработает — нужен IP/домен сервера.
   static const String _defaultServerUrl = 'http://192.168.137.1:8080';
+  static const String _bootstrapConfigUrl =
+      'https://raw.githubusercontent.com/VladosFlexXx/eios/main/vuz_app/config/push_bootstrap.json';
 
   final FlutterLocalNotificationsPlugin _local =
       FlutterLocalNotificationsPlugin();
@@ -64,12 +71,13 @@ class NotificationService {
   /// Текущие настройки сервера.
   final ValueNotifier<PushServerConfig> serverConfig =
       ValueNotifier<PushServerConfig>(
-    const PushServerConfig(baseUrl: _defaultServerUrl, registerSecret: ''),
-  );
+        const PushServerConfig(baseUrl: _defaultServerUrl, registerSecret: ''),
+      );
 
   /// Человекочитаемый статус пушей/регистрации.
-  final ValueNotifier<String> status =
-      ValueNotifier<String>('Пуши: не запущены');
+  final ValueNotifier<String> status = ValueNotifier<String>(
+    'Пуши: не запущены',
+  );
   final ValueNotifier<String?> lastError = ValueNotifier<String?>(null);
 
   /// Последний результат проверки /health.
@@ -87,8 +95,7 @@ class NotificationService {
   bool _started = false;
   bool _ready = false;
 
-  static const AndroidNotificationChannel _channel =
-      AndroidNotificationChannel(
+  static const AndroidNotificationChannel _channel = AndroidNotificationChannel(
     'schedule_changes',
     'Изменения расписания',
     description: 'Уведомления об изменениях в расписании',
@@ -97,7 +104,8 @@ class NotificationService {
 
   @pragma('vm:entry-point')
   static Future<void> firebaseMessagingBackgroundHandler(
-      RemoteMessage message) async {}
+    RemoteMessage message,
+  ) async {}
 
   bool get isReady => _ready;
 
@@ -120,17 +128,20 @@ class NotificationService {
       await Firebase.initializeApp();
       _fcm = FirebaseMessaging.instance;
 
-      FirebaseMessaging.onBackgroundMessage(
-          firebaseMessagingBackgroundHandler);
+      FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
       await _initLocalNotifications();
       await _restoreState();
+      await _refreshServerConfigFromBootstrap();
 
       FirebaseMessaging.onMessageOpenedApp.listen(_handleRemoteTap);
       final initial = await _fcm!.getInitialMessage();
       if (initial != null) _handleRemoteTap(initial);
 
-      FirebaseMessaging.onMessage.listen(_showLocalFromRemote);
+      FirebaseMessaging.onMessage.listen((message) async {
+        await _maybeApplyRemoteServerConfigFromData(message.data);
+        await _showLocalFromRemote(message);
+      });
 
       _fcm!.onTokenRefresh.listen((t) async {
         token.value = t;
@@ -159,8 +170,7 @@ class NotificationService {
     token.value = prefs.getString(_prefsKeyToken);
 
     final savedUrl = (prefs.getString(_prefsKeyServerUrl) ?? '').trim();
-    final savedSecret =
-        (prefs.getString(_prefsKeyRegisterSecret) ?? '').trim();
+    final savedSecret = (prefs.getString(_prefsKeyRegisterSecret) ?? '').trim();
 
     serverConfig.value = PushServerConfig(
       baseUrl: savedUrl.isNotEmpty ? savedUrl : _defaultServerUrl,
@@ -168,25 +178,59 @@ class NotificationService {
     );
   }
 
+  Future<void> _refreshServerConfigFromBootstrap() async {
+    try {
+      final resp = await http
+          .get(Uri.parse(_bootstrapConfigUrl))
+          .timeout(const Duration(seconds: 8));
+      if (resp.statusCode != 200) return;
+
+      final decoded = jsonDecode(resp.body);
+      if (decoded is! Map) return;
+
+      final url = (decoded['push_base_url'] ?? '').toString().trim();
+      if (!url.startsWith('http://') && !url.startsWith('https://')) return;
+
+      final secret = (decoded['register_secret'] ?? '').toString().trim();
+      final current = serverConfig.value;
+      if (current.baseUrl.trim() == url &&
+          current.registerSecret.trim() == secret) {
+        return;
+      }
+
+      await saveServerConfig(baseUrl: url, registerSecret: secret);
+      status.value = 'Пуши: сервер обновлён из bootstrap';
+      lastError.value = null;
+
+      if (enabled.value) {
+        await registerNow();
+      }
+    } catch (_) {
+      // bootstrap optional: ignore network errors
+    }
+  }
+
   Future<void> _initLocalNotifications() async {
-    const androidInit =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+    const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosInit = DarwinInitializationSettings();
-    const initSettings =
-        InitializationSettings(android: androidInit, iOS: iosInit);
+    const initSettings = InitializationSettings(
+      android: androidInit,
+      iOS: iosInit,
+    );
 
     await _local.initialize(
       initSettings,
       onDidReceiveNotificationResponse: (resp) {
         if (resp.payload != null) {
-          _handlePayloadString(resp.payload!);
+          unawaited(_handlePayloadString(resp.payload!));
         }
       },
     );
 
     await _local
         .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
+          AndroidFlutterLocalNotificationsPlugin
+        >()
         ?.createNotificationChannel(_channel);
 
     await _fcm!.setForegroundNotificationPresentationOptions(
@@ -198,13 +242,14 @@ class NotificationService {
 
   /// Сохранить настройки сервера в SharedPreferences.
   /// Если пуши включены и токен уже есть — сразу попробуем зарегистрироваться.
-  Future<void> saveServerConfig(
-      {required String baseUrl, required String registerSecret}) async {
+  Future<void> saveServerConfig({
+    required String baseUrl,
+    required String registerSecret,
+  }) async {
     final url = baseUrl.trim();
     final secret = registerSecret.trim();
 
-    serverConfig.value =
-        PushServerConfig(baseUrl: url, registerSecret: secret);
+    serverConfig.value = PushServerConfig(baseUrl: url, registerSecret: secret);
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_prefsKeyServerUrl, url);
@@ -239,8 +284,10 @@ class NotificationService {
         return r;
       }
 
-      final r =
-          PushPingResult(false, 'Ошибка /health: HTTP ${resp.statusCode}');
+      final r = PushPingResult(
+        false,
+        'Ошибка /health: HTTP ${resp.statusCode}',
+      );
       lastPing.value = r;
       return r;
     } catch (e) {
@@ -311,8 +358,10 @@ class NotificationService {
   Future<PushRegisterResult> registerNow() async {
     final t = token.value;
     if (t == null || t.trim().isEmpty) {
-      final r =
-          const PushRegisterResult(ok: false, message: 'Нет токена (включи пуши)');
+      final r = const PushRegisterResult(
+        ok: false,
+        message: 'Нет токена (включи пуши)',
+      );
       lastRegister.value = r;
       return r;
     }
@@ -355,7 +404,10 @@ class NotificationService {
           .timeout(const Duration(seconds: 10));
 
       if (resp.statusCode == 200) {
-        return const PushRegisterResult(ok: true, message: 'Токен зарегистрирован');
+        return const PushRegisterResult(
+          ok: true,
+          message: 'Токен зарегистрирован',
+        );
       }
 
       String details = resp.body;
@@ -437,15 +489,48 @@ class NotificationService {
     }
   }
 
-  void _handleRemoteTap(RemoteMessage message) {
+  Future<void> _maybeApplyRemoteServerConfigFromData(
+    Map<String, dynamic> raw,
+  ) async {
+    final data = <String, String>{};
+    raw.forEach((k, v) => data[k.toString()] = v.toString());
+
+    final cmd = (data['cmd'] ?? '').trim().toLowerCase();
+    final newUrl = (data['server_url'] ?? '').trim();
+    final maybeSecret = (data['server_secret'] ?? '').trim();
+
+    final shouldApply = cmd == 'push_server_update' || newUrl.isNotEmpty;
+    if (!shouldApply) return;
+    if (!newUrl.startsWith('http://') && !newUrl.startsWith('https://')) return;
+
+    final current = serverConfig.value;
+    final secret = maybeSecret.isNotEmpty
+        ? maybeSecret
+        : current.registerSecret;
+
+    if (current.baseUrl.trim() == newUrl &&
+        current.registerSecret.trim() == secret) {
+      return;
+    }
+
+    await saveServerConfig(baseUrl: newUrl, registerSecret: secret);
+    status.value = 'Пуши: сервер обновлён командой';
+    lastError.value = null;
+  }
+
+  Future<void> _handleRemoteTap(RemoteMessage message) async {
+    await _maybeApplyRemoteServerConfigFromData(message.data);
     final data = <String, String>{};
     message.data.forEach((k, v) => data[k] = v.toString());
     action.value = NotificationAction(_targetFromData(data), data);
   }
 
-  void _handlePayloadString(String payload) {
+  Future<void> _handlePayloadString(String payload) async {
     final decoded = jsonDecode(payload);
     if (decoded is Map) {
+      await _maybeApplyRemoteServerConfigFromData(
+        decoded.map((k, v) => MapEntry(k.toString(), v)),
+      );
       final data = <String, String>{};
       decoded.forEach((k, v) => data[k.toString()] = v.toString());
       action.value = NotificationAction(_targetFromData(data), data);

@@ -1,0 +1,6 @@
+{
+  "push_base_url": "https://doria-nonobligated-laurena.ngrok-free.dev",
+  "register_secret": "super-secret-123-456",
+  "updated_at_utc": "2026-02-08T16:00:00Z",
+  "note": "Temporary bootstrap config for push server URL/secret."
+}
