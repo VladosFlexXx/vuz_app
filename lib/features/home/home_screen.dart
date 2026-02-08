@@ -72,9 +72,20 @@ class _HomeScreenState extends State<HomeScreen> {
     final act = _notif.action.value;
     if (act == null) return;
 
-    if (act.target == AppNavTarget.schedule) {
-      _navigateTo(1);
-      ScheduleRepository.instance.refresh();
+    switch (act.target) {
+      case AppNavTarget.home:
+        _navigateTo(0);
+        break;
+      case AppNavTarget.schedule:
+        _navigateTo(1);
+        ScheduleRepository.instance.refresh();
+        break;
+      case AppNavTarget.grades:
+        _navigateTo(2);
+        break;
+      case AppNavTarget.profile:
+        _navigateTo(3);
+        break;
     }
 
     _notif.action.value = null;

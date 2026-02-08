@@ -1,33 +1,26 @@
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/cache/cached_repository.dart';
-import 'convert.dart';
-import 'merge.dart';
+import 'data/schedule_remote_source.dart';
+import 'data/web_schedule_remote_source.dart';
 import 'models.dart';
 import 'schedule_rule.dart';
-import 'schedule_service.dart';
 import 'week_parity.dart';
 import 'week_parity_service.dart';
 
 const _kCacheKey = 'schedule_cache_v3';
 const _kCacheUpdatedKey = 'schedule_cache_updated_v3';
 
-const _baseUrl = 'https://eos.imes.su/mod/page/view.php?id=41428';
-const _changesUrl = 'https://eos.imes.su/mod/page/view.php?id=56446';
-
-List<Lesson> _parseLessons(String html) => lessonsFromHtml(html);
-
 String _normDay(String s) => s.toUpperCase().trim();
 
 class ScheduleRepository extends CachedRepository<List<Lesson>> {
-  ScheduleRepository._()
-      : super(
-          initialData: const [],
-          ttl: const Duration(minutes: 10),
-        );
+  final ScheduleRemoteSource _remoteSource;
+
+  ScheduleRepository._({ScheduleRemoteSource? remoteSource})
+    : _remoteSource = remoteSource ?? WebScheduleRemoteSource(),
+      super(initialData: const [], ttl: const Duration(minutes: 10));
 
   static final ScheduleRepository instance = ScheduleRepository._();
 
@@ -42,33 +35,30 @@ class ScheduleRepository extends CachedRepository<List<Lesson>> {
     final dayName = _weekdayRuUpper(date);
     final parity = WeekParityService.parityFor(date);
 
-    return lessons
-        .where((l) {
-          if (_normDay(l.day) != dayName) return false;
+    return lessons.where((l) {
+      if (_normDay(l.day) != dayName) return false;
 
-          final rule = ScheduleRule.parseFromSubject(l.subject);
+      final rule = ScheduleRule.parseFromSubject(l.subject);
 
-          switch (rule.type) {
-            case ScheduleRuleType.always:
-              return true;
+      switch (rule.type) {
+        case ScheduleRuleType.always:
+          return true;
 
-            case ScheduleRuleType.evenWeeks:
-              return parity == WeekParity.even;
+        case ScheduleRuleType.evenWeeks:
+          return parity == WeekParity.even;
 
-            case ScheduleRuleType.oddWeeks:
-              return parity == WeekParity.odd;
+        case ScheduleRuleType.oddWeeks:
+          return parity == WeekParity.odd;
 
-            case ScheduleRuleType.specificDates:
-              return rule.dates.any((dm) {
-                final resolved = dm.resolveNear(date);
-                return resolved.year == date.year &&
-                    resolved.month == date.month &&
-                    resolved.day == date.day;
-              });
-          }
-        })
-        .toList()
-      ..sort((a, b) => _timeRank(a.time).compareTo(_timeRank(b.time)));
+        case ScheduleRuleType.specificDates:
+          return rule.dates.any((dm) {
+            final resolved = dm.resolveNear(date);
+            return resolved.year == date.year &&
+                resolved.month == date.month &&
+                resolved.day == date.day;
+          });
+      }
+    }).toList()..sort((a, b) => _timeRank(a.time).compareTo(_timeRank(b.time)));
   }
 
   @override
@@ -101,42 +91,31 @@ class ScheduleRepository extends CachedRepository<List<Lesson>> {
 
   @override
   Future<List<Lesson>> fetchRemote() async {
-    final service = ScheduleService();
-
-    final baseHtml = await service.loadPage(_baseUrl);
-    final baseLessons = await compute(_parseLessons, baseHtml);
-
-    List<Lesson> changeLessons = const [];
-    try {
-      final changesHtml = await service.loadPage(_changesUrl);
-      changeLessons = await compute(_parseLessons, changesHtml);
-    } catch (_) {}
-
-    return mergeSchedule(base: baseLessons, changes: changeLessons);
+    return _remoteSource.fetchLessons();
   }
 
   Map<String, dynamic> _lessonToJson(Lesson l) => {
-        'day': l.day,
-        'time': l.time,
-        'subject': l.subject,
-        'place': l.place,
-        'type': l.type,
-        'teacher': l.teacher,
-        'status': l.status.name,
-      };
+    'day': l.day,
+    'time': l.time,
+    'subject': l.subject,
+    'place': l.place,
+    'type': l.type,
+    'teacher': l.teacher,
+    'status': l.status.name,
+  };
 
   Lesson _lessonFromJson(Map<String, dynamic> j) => Lesson(
-        day: j['day'],
-        time: j['time'],
-        subject: j['subject'],
-        place: j['place'],
-        type: j['type'],
-        teacher: j['teacher'],
-        status: LessonStatus.values.firstWhere(
-          (e) => e.name == j['status'],
-          orElse: () => LessonStatus.normal,
-        ),
-      );
+    day: j['day'],
+    time: j['time'],
+    subject: j['subject'],
+    place: j['place'],
+    type: j['type'],
+    teacher: j['teacher'],
+    status: LessonStatus.values.firstWhere(
+      (e) => e.name == j['status'],
+      orElse: () => LessonStatus.normal,
+    ),
+  );
 }
 
 String _weekdayRuUpper(DateTime d) {

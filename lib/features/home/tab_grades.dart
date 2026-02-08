@@ -11,6 +11,12 @@ import '../recordbook/models.dart';
 import '../study_plan/repository.dart';
 import '../study_plan/models.dart';
 
+part '../grades/ui_parts/course_card.dart';
+part '../grades/ui_parts/study_plan_card.dart';
+part '../grades/ui_parts/recordbook_card.dart';
+part '../grades/ui_parts/badge.dart';
+part '../grades/ui_parts/chip.dart';
+
 enum StudySection { disciplines, studyPlan, recordbook }
 
 class GradesTab extends StatefulWidget {
@@ -99,8 +105,16 @@ class _GradesTabState extends State<GradesTab> {
       child: Wrap(
         spacing: 8,
         children: [
-          chip(StudySection.disciplines, 'Дисциплины', Icons.menu_book_outlined),
-          chip(StudySection.studyPlan, 'Учебный план', Icons.view_list_outlined),
+          chip(
+            StudySection.disciplines,
+            'Дисциплины',
+            Icons.menu_book_outlined,
+          ),
+          chip(
+            StudySection.studyPlan,
+            'Учебный план',
+            Icons.view_list_outlined,
+          ),
           chip(StudySection.recordbook, 'Зачётка', Icons.fact_check_outlined),
         ],
       ),
@@ -126,7 +140,10 @@ class _GradesTabState extends State<GradesTab> {
     x = x.replaceAll('_', ' ');
 
     // Убираем префиксы типа "ОД." / "дисциплина:" и т.п.
-    x = x.replaceAll(RegExp(r'^\s*(од\.|дисциплина:|дисц\.)\s*', caseSensitive: false), '');
+    x = x.replaceAll(
+      RegExp(r'^\s*(од\.|дисциплина:|дисц\.)\s*', caseSensitive: false),
+      '',
+    );
 
     // Убираем популярные хвосты/скобки
     x = x.replaceAll(RegExp(r'\(.*?недел.*?\)'), ''); // (нечетная неделя)
@@ -232,9 +249,7 @@ class _GradesTabState extends State<GradesTab> {
         content: TextField(
           controller: controller,
           keyboardType: TextInputType.number,
-          decoration: const InputDecoration(
-            hintText: 'например 50 или 60',
-          ),
+          decoration: const InputDecoration(hintText: 'например 50 или 60'),
         ),
         actions: [
           TextButton(
@@ -301,8 +316,10 @@ class _GradesTabState extends State<GradesTab> {
 
       final prevGrade = prev.grade?.trim() ?? '';
       final curGrade = c.grade?.trim() ?? '';
-      final prevHasFinal = prevGrade.isNotEmpty && prevGrade != '—' && prevGrade != '-';
-      final curHasFinal = curGrade.isNotEmpty && curGrade != '—' && curGrade != '-';
+      final prevHasFinal =
+          prevGrade.isNotEmpty && prevGrade != '—' && prevGrade != '-';
+      final curHasFinal =
+          curGrade.isNotEmpty && curGrade != '—' && curGrade != '-';
 
       if (prevHasFinal && !curHasFinal) {
         dedup[key] = c;
@@ -396,13 +413,19 @@ class _GradesTabState extends State<GradesTab> {
           ),
         ] else ...[
           if (currentQ.isNotEmpty) ...[
-            Text('Текущие', style: t.titleSmall?.copyWith(fontWeight: FontWeight.w900)),
+            Text(
+              'Текущие',
+              style: t.titleSmall?.copyWith(fontWeight: FontWeight.w900),
+            ),
             const SizedBox(height: 8),
             for (final c in currentQ) _CourseCard(course: c, onTap: () {}),
             const SizedBox(height: 12),
           ],
           if (othersQ.isNotEmpty) ...[
-            Text('Остальные', style: t.titleSmall?.copyWith(fontWeight: FontWeight.w900)),
+            Text(
+              'Остальные',
+              style: t.titleSmall?.copyWith(fontWeight: FontWeight.w900),
+            ),
             const SizedBox(height: 8),
             for (final c in othersQ) _CourseCard(course: c, onTap: () {}),
           ],
@@ -477,7 +500,9 @@ class _GradesTabState extends State<GradesTab> {
           Row(
             children: [
               Icon(
-                planRepo.lastError != null ? Icons.warning_amber_rounded : Icons.sync,
+                planRepo.lastError != null
+                    ? Icons.warning_amber_rounded
+                    : Icons.sync,
                 size: 18,
                 color: planRepo.lastError != null
                     ? cs.error.withValues(alpha: 0.86)
@@ -538,12 +563,19 @@ class _GradesTabState extends State<GradesTab> {
   // =========================
 
   List<String> _gradebooks(List<RecordbookGradebook> gradebooks) {
-    final s = gradebooks.map((e) => e.number).where((x) => x.trim().isNotEmpty).toSet().toList();
+    final s = gradebooks
+        .map((e) => e.number)
+        .where((x) => x.trim().isNotEmpty)
+        .toSet()
+        .toList();
     s.sort();
     return s;
   }
 
-  List<int> _availableRecordSemesters(List<RecordbookGradebook> gradebooks, String gradebook) {
+  List<int> _availableRecordSemesters(
+    List<RecordbookGradebook> gradebooks,
+    String gradebook,
+  ) {
     final selected = gradebooks.where((g) => g.number == gradebook).toList();
     final s = selected
         .expand((g) => g.semesters)
@@ -571,8 +603,9 @@ class _GradesTabState extends State<GradesTab> {
 
     final gb = _selectedGradebook;
 
-    final semesters =
-        gb == null ? <int>[1, 2, 3, 4, 5, 6, 7, 8] : _availableRecordSemesters(gradebookData, gb);
+    final semesters = gb == null
+        ? <int>[1, 2, 3, 4, 5, 6, 7, 8]
+        : _availableRecordSemesters(gradebookData, gb);
     if (!semesters.contains(_recordSemester)) {
       _recordSemester = semesters.first;
     }
@@ -580,15 +613,15 @@ class _GradesTabState extends State<GradesTab> {
     final selected = gb == null
         ? null
         : gradebookData.cast<RecordbookGradebook?>().firstWhere(
-              (g) => g?.number == gb,
-              orElse: () => null,
-            );
+            (g) => g?.number == gb,
+            orElse: () => null,
+          );
     final visible = selected == null
         ? const <RecordbookRow>[]
         : selected.semesters
-            .where((s) => s.semester == _recordSemester)
-            .expand((s) => s.rows)
-            .toList();
+              .where((s) => s.semester == _recordSemester)
+              .expand((s) => s.rows)
+              .toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -597,7 +630,9 @@ class _GradesTabState extends State<GradesTab> {
           Row(
             children: [
               Icon(
-                recordRepo.lastError != null ? Icons.warning_amber_rounded : Icons.sync,
+                recordRepo.lastError != null
+                    ? Icons.warning_amber_rounded
+                    : Icons.sync,
                 size: 18,
                 color: recordRepo.lastError != null
                     ? cs.error.withValues(alpha: 0.86)
@@ -619,7 +654,9 @@ class _GradesTabState extends State<GradesTab> {
 
         if (gradebooks.length > 1) ...[
           DropdownButtonFormField<String>(
-            key: ValueKey('gradebook-dd-${_selectedGradebook ?? ''}-${gradebooks.join('|')}'),
+            key: ValueKey(
+              'gradebook-dd-${_selectedGradebook ?? ''}-${gradebooks.join('|')}',
+            ),
             initialValue: _selectedGradebook,
             items: [
               for (final g in gradebooks)
@@ -628,9 +665,7 @@ class _GradesTabState extends State<GradesTab> {
             onChanged: (v) => setState(() {
               _selectedGradebook = v;
             }),
-            decoration: const InputDecoration(
-              labelText: 'Выбор зачётки',
-            ),
+            decoration: const InputDecoration(labelText: 'Выбор зачётки'),
           ),
           const SizedBox(height: 12),
         ] else if (gradebooks.length == 1) ...[
@@ -710,7 +745,12 @@ class _GradesTabState extends State<GradesTab> {
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: Listenable.merge([gradesRepo, scheduleRepo, planRepo, recordRepo]),
+      animation: Listenable.merge([
+        gradesRepo,
+        scheduleRepo,
+        planRepo,
+        recordRepo,
+      ]),
       builder: (context, _) {
         final title = switch (_section) {
           StudySection.disciplines => 'Дисциплины',
@@ -780,243 +820,3 @@ class _GradesTabState extends State<GradesTab> {
 // =========================
 // Cards
 // =========================
-
-class _CourseCard extends StatelessWidget {
-  final GradeCourse course;
-  final VoidCallback onTap;
-
-  const _CourseCard({required this.course, required this.onTap});
-
-  bool _hasGrade() {
-    final g = course.grade;
-    return g != null && g.trim().isNotEmpty && g.trim() != '—' && g.trim() != '-';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final t = Theme.of(context).textTheme;
-    final cs = Theme.of(context).colorScheme;
-
-    final any = _hasGrade();
-    final grade = course.grade?.trim();
-
-    return Card(
-      elevation: 0,
-      margin: const EdgeInsets.only(bottom: 10),
-      child: SizedBox(
-        width: double.infinity,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(18),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Text(
-                    course.courseName,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                    style: t.titleMedium?.copyWith(fontWeight: FontWeight.w900),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                if (any && grade != null)
-                  _Badge(text: grade)
-                else
-                  Text('—', style: t.titleLarge?.copyWith(fontWeight: FontWeight.w900)),
-                const SizedBox(width: 6),
-                Icon(Icons.chevron_right, color: cs.onSurface.withValues(alpha: 0.6)),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _StudyPlanCard extends StatelessWidget {
-  final StudyPlanItem item;
-
-  const _StudyPlanCard({required this.item});
-
-  @override
-  Widget build(BuildContext context) {
-    final t = Theme.of(context).textTheme;
-
-    final chips = <Widget>[];
-
-    if (item.control.trim().isNotEmpty) {
-      chips.add(_Chip(text: item.control.trim()));
-    }
-    if (item.code.trim().isNotEmpty) {
-      chips.add(_Chip(text: item.code.trim()));
-    }
-    if (item.totalHours.trim().isNotEmpty) {
-      chips.add(_Chip(text: '${item.totalHours.trim()} ч'));
-    }
-    if (item.lectures.trim().isNotEmpty && item.lectures.trim() != '0') {
-      chips.add(_Chip(text: 'Лек: ${item.lectures.trim()}'));
-    }
-    if (item.practices.trim().isNotEmpty && item.practices.trim() != '0') {
-      chips.add(_Chip(text: 'Практ: ${item.practices.trim()}'));
-    }
-    if (item.selfWork.trim().isNotEmpty && item.selfWork.trim() != '0') {
-      chips.add(_Chip(text: 'СРС: ${item.selfWork.trim()}'));
-    }
-
-    return Card(
-      elevation: 0,
-      margin: const EdgeInsets.only(bottom: 10),
-      child: SizedBox(
-        width: double.infinity,
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                item.name,
-                style: t.titleMedium?.copyWith(fontWeight: FontWeight.w900),
-              ),
-              const SizedBox(height: 8),
-              if (chips.isNotEmpty) Wrap(spacing: 8, runSpacing: 8, children: chips),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _RecordbookCard extends StatelessWidget {
-  final RecordbookRow row;
-
-  const _RecordbookCard({required this.row});
-
-  @override
-  Widget build(BuildContext context) {
-    final t = Theme.of(context).textTheme;
-    final cs = Theme.of(context).colorScheme;
-
-    final chips = <Widget>[];
-    if (row.controlType.trim().isNotEmpty) chips.add(_Chip(text: row.controlType.trim()));
-    if (row.date.trim().isNotEmpty) chips.add(_Chip(text: row.date.trim()));
-    if (row.mark.trim().isNotEmpty) chips.add(_Chip(text: row.mark.trim()));
-    if (row.retake.trim().isNotEmpty) chips.add(_Chip(text: 'Пересдача: ${row.retake.trim()}'));
-
-    return Card(
-      elevation: 0,
-      margin: const EdgeInsets.only(bottom: 10),
-      child: SizedBox(
-        width: double.infinity,
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                row.discipline,
-                style: t.titleMedium?.copyWith(fontWeight: FontWeight.w900),
-              ),
-              const SizedBox(height: 8),
-              if (chips.isNotEmpty) Wrap(spacing: 8, runSpacing: 8, children: chips),
-              if (row.teacher.trim().isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Text(
-                  row.teacher.trim(),
-                  style: t.bodySmall?.copyWith(color: cs.onSurface.withValues(alpha: 0.7)),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// =========================
-// UI helpers
-// =========================
-
-class _Badge extends StatelessWidget {
-  final String text;
-  const _Badge({required this.text});
-
-  double? _scoreRaw(String value) {
-    final normalized = value.replaceAll(',', '.').trim();
-    return double.tryParse(normalized);
-  }
-
-  double? _scorePercent(String value) {
-    final raw = _scoreRaw(value);
-    if (raw == null) return null;
-    if (raw <= 5.0) return (raw / 5.0) * 100.0;
-    if (raw <= 100.0) return raw;
-    return null;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final p = _scorePercent(text);
-
-    final bool hasScore = p != null;
-    final bool low = hasScore && p < 45;
-    final bool mid = hasScore && p >= 45 && p < 75;
-
-    final bg = !hasScore
-        ? cs.primaryContainer
-        : (low
-            ? cs.primary.withValues(alpha: 0.16)
-            : (mid
-                ? cs.primary.withValues(alpha: 0.24)
-                : cs.primary.withValues(alpha: 0.34)));
-    final fg = !hasScore ? cs.onPrimaryContainer : cs.primary;
-    final borderColor = !hasScore
-        ? cs.onPrimaryContainer.withValues(alpha: 0.12)
-        : cs.primary.withValues(alpha: 0.45);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: borderColor),
-      ),
-      child: Text(
-        text,
-        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w900,
-              color: fg,
-              height: 1.0,
-            ),
-      ),
-    );
-  }
-}
-
-class _Chip extends StatelessWidget {
-  final String text;
-  const _Chip({required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(999),
-        color: cs.surfaceContainerHighest.withValues(alpha: 0.35),
-        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.35)),
-      ),
-      child: Text(
-        text,
-        style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w800),
-      ),
-    );
-  }
-}

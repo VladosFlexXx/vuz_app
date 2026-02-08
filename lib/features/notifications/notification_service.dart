@@ -9,7 +9,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Куда навигируемся после тапа по пушу.
-enum AppNavTarget { schedule }
+enum AppNavTarget { home, schedule, grades, profile }
 
 class NotificationAction {
   final AppNavTarget target;
@@ -297,7 +297,12 @@ class NotificationService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_prefsKeyToken, t);
 
-    await registerNow();
+    final reg = await registerNow();
+    if (!reg.ok) {
+      lastError.value = reg.message;
+      status.value = 'Пуши: токен есть, но сервер не принял регистрацию';
+      return;
+    }
 
     status.value = 'Пуши: включены';
   }
@@ -324,6 +329,13 @@ class NotificationService {
 
     final r = await _registerTokenOnServer(t);
     lastRegister.value = r;
+    if (r.ok) {
+      lastError.value = null;
+      status.value = 'Пуши: включены';
+    } else {
+      lastError.value = r.message;
+      status.value = 'Пуши: ошибка регистрации';
+    }
     return r;
   }
 
@@ -410,10 +422,25 @@ class NotificationService {
     );
   }
 
+  AppNavTarget _targetFromData(Map<String, String> data) {
+    final raw = (data['target'] ?? '').trim().toLowerCase();
+    switch (raw) {
+      case 'home':
+        return AppNavTarget.home;
+      case 'grades':
+        return AppNavTarget.grades;
+      case 'profile':
+        return AppNavTarget.profile;
+      case 'schedule':
+      default:
+        return AppNavTarget.schedule;
+    }
+  }
+
   void _handleRemoteTap(RemoteMessage message) {
     final data = <String, String>{};
     message.data.forEach((k, v) => data[k] = v.toString());
-    action.value = NotificationAction(AppNavTarget.schedule, data);
+    action.value = NotificationAction(_targetFromData(data), data);
   }
 
   void _handlePayloadString(String payload) {
@@ -421,7 +448,7 @@ class NotificationService {
     if (decoded is Map) {
       final data = <String, String>{};
       decoded.forEach((k, v) => data[k.toString()] = v.toString());
-      action.value = NotificationAction(AppNavTarget.schedule, data);
+      action.value = NotificationAction(_targetFromData(data), data);
     }
   }
 }

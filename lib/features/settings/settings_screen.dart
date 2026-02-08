@@ -7,6 +7,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import '../../app.dart';
 import '../../core/auth/auth_settings.dart';
 import '../../core/network/eios_client.dart';
+import '../../core/network/eios_endpoints.dart';
 
 // debug/log/share
 import '../../core/logging/app_logger.dart';
@@ -16,6 +17,8 @@ import '../debug/debug_report.dart';
 
 import '../auth/login_webview.dart';
 import '../notifications/notification_service.dart';
+
+part 'settings_parts/push_card.dart';
 
 enum _CredsStatus { none, ok, bad }
 
@@ -89,7 +92,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       AppLogger.instance.i('[DIAG] build report start');
       final report = await DebugReport.build();
       final file = await LogExporter.exportToTempFile(report);
-      AppLogger.instance.i('[DIAG] report ready file=${file.path} bytes=${report.length}');
+      AppLogger.instance.i(
+        '[DIAG] report ready file=${file.path} bytes=${report.length}',
+      );
 
       if (!mounted) return;
 
@@ -110,7 +115,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Диагностика', style: t.titleLarge?.copyWith(fontWeight: FontWeight.w900)),
+                  Text(
+                    'Диагностика',
+                    style: t.titleLarge?.copyWith(fontWeight: FontWeight.w900),
+                  ),
                   const SizedBox(height: 6),
                   Text('Файл: ${file.path}', style: t.bodySmall),
                   const SizedBox(height: 12),
@@ -123,7 +131,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             if (!context.mounted) return;
                             Navigator.of(context).pop();
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Отчёт скопирован в буфер')),
+                              const SnackBar(
+                                content: Text('Отчёт скопирован в буфер'),
+                              ),
                             );
                           },
                           icon: const Icon(Icons.copy),
@@ -133,7 +143,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SizedBox(width: 10),
                       OutlinedButton.icon(
                         onPressed: () async {
-                          await ShareHelper.shareFile(file, text: 'Отчёт диагностики ЭИОС ИМЭС');
+                          await ShareHelper.shareFile(
+                            file,
+                            text: 'Отчёт диагностики ЭИОС ИМЭС',
+                          );
                           if (!context.mounted) return;
                           Navigator.of(context).pop();
                         },
@@ -153,9 +166,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Ошибка диагностики: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Ошибка диагностики: $e')));
     }
   }
 
@@ -201,7 +214,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             borderRadius: BorderRadius.circular(999),
             border: Border.all(color: fg.withOpacity(0.25)),
           ),
-          child: Text(text, style: TextStyle(color: fg, fontWeight: FontWeight.w700)),
+          child: Text(
+            text,
+            style: TextStyle(color: fg, fontWeight: FontWeight.w700),
+          ),
         ),
       ],
     );
@@ -327,7 +343,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   children: [
                     const Align(
                       alignment: Alignment.centerLeft,
-                      child: Text('Логин и пароль', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+                      child: Text(
+                        'Логин и пароль',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 10),
 
@@ -336,21 +358,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         width: double.infinity,
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: (inlineIsError ? cs.error : cs.primary).withOpacity(0.12),
+                          color: (inlineIsError ? cs.error : cs.primary)
+                              .withOpacity(0.12),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: (inlineIsError ? cs.error : cs.primary).withOpacity(0.35)),
+                          border: Border.all(
+                            color: (inlineIsError ? cs.error : cs.primary)
+                                .withOpacity(0.35),
+                          ),
                         ),
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(inlineIsError ? Icons.error_outline : Icons.info_outline,
-                                color: inlineIsError ? cs.error : cs.primary),
+                            Icon(
+                              inlineIsError
+                                  ? Icons.error_outline
+                                  : Icons.info_outline,
+                              color: inlineIsError ? cs.error : cs.primary,
+                            ),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
                                 inlineMsg!,
                                 style: TextStyle(
-                                  color: inlineIsError ? cs.error : cs.onSurface,
+                                  color: inlineIsError
+                                      ? cs.error
+                                      : cs.onSurface,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -369,7 +401,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         border: OutlineInputBorder(),
                       ),
                       onChanged: (_) {
-                        if (inlineMsg != null) setModalState(() => inlineMsg = null);
+                        if (inlineMsg != null)
+                          setModalState(() => inlineMsg = null);
                       },
                     ),
                     const SizedBox(height: 10),
@@ -381,12 +414,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         prefixIcon: const Icon(Icons.key_outlined),
                         border: const OutlineInputBorder(),
                         suffixIcon: IconButton(
-                          onPressed: () => setModalState(() => showPass = !showPass),
-                          icon: Icon(showPass ? Icons.visibility_off : Icons.visibility),
+                          onPressed: () =>
+                              setModalState(() => showPass = !showPass),
+                          icon: Icon(
+                            showPass ? Icons.visibility_off : Icons.visibility,
+                          ),
                         ),
                       ),
                       onChanged: (_) {
-                        if (inlineMsg != null) setModalState(() => inlineMsg = null);
+                        if (inlineMsg != null)
+                          setModalState(() => inlineMsg = null);
                       },
                     ),
                     const SizedBox(height: 12),
@@ -394,9 +431,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       children: [
                         Expanded(
                           child: FilledButton.icon(
-                            onPressed: _checkingCreds ? null : () => saveAndCheck(setModalState),
+                            onPressed: _checkingCreds
+                                ? null
+                                : () => saveAndCheck(setModalState),
                             icon: _checkingCreds
-                                ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
                                 : const Icon(Icons.verified_outlined),
                             label: const Text('Сохранить и проверить'),
                           ),
@@ -441,23 +486,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
             RadioListTile<AuthReloginMode>(
               value: AuthReloginMode.safeUiLogin,
               groupValue: _auth.mode,
-              title: Text('Без хранения пароля', style: t.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
-              subtitle: const Text('Если сессия истекла — автоматически откроем вход, после входа всё обновится.'),
+              title: Text(
+                'Без хранения пароля',
+                style: t.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+              ),
+              subtitle: const Text(
+                'Если сессия истекла — автоматически откроем вход, после входа всё обновится.',
+              ),
               onChanged: (v) => v == null ? null : _auth.setMode(v),
             ),
             const Divider(height: 1),
             RadioListTile<AuthReloginMode>(
               value: AuthReloginMode.silentWithCredentials,
               groupValue: _auth.mode,
-              title: Text('Тихий авторелогин (удобно)', style: t.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
-              subtitle: const Text('Сохраняет логин/пароль (Secure Storage) и при протухшей сессии попробует перелогиниться в фоне.'),
+              title: Text(
+                'Тихий авторелогин (удобно)',
+                style: t.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+              ),
+              subtitle: const Text(
+                'Сохраняет логин/пароль (Secure Storage) и при протухшей сессии попробует перелогиниться в фоне.',
+              ),
               onChanged: (v) => v == null ? null : _auth.setMode(v),
             ),
             if (_auth.mode == AuthReloginMode.silentWithCredentials) ...[
               const Divider(height: 1),
               SwitchListTile(
                 secondary: const Icon(Icons.lock_outline),
-                title: Text('Разрешить хранение логина/пароля', style: t.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+                title: Text(
+                  'Разрешить хранение логина/пароля',
+                  style: t.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+                ),
                 subtitle: const Text('Без этого тихий авторелогин не работает'),
                 value: _auth.credsEnabled,
                 onChanged: (v) async {
@@ -468,7 +526,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       _credsStatus = _CredsStatus.none;
                       _credsHint = 'Хранение выключено';
                     } else {
-                      if (_credsHint == 'Хранение выключено') _credsHint = 'Не настроено';
+                      if (_credsHint == 'Хранение выключено')
+                        _credsHint = 'Не настроено';
                     }
                   });
                 },
@@ -476,11 +535,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const Divider(height: 1),
               ListTile(
                 leading: const Icon(Icons.settings_outlined),
-                title: Text('Настроить логин/пароль', style: t.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+                title: Text(
+                  'Настроить логин/пароль',
+                  style: t.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+                ),
                 subtitle: _statusChip(),
                 trailing: const Icon(Icons.chevron_right),
                 enabled: _auth.credsEnabled && !_checkingCreds,
-                onTap: (_auth.credsEnabled && !_checkingCreds) ? _openCredsSettingsSheet : null,
+                onTap: (_auth.credsEnabled && !_checkingCreds)
+                    ? _openCredsSettingsSheet
+                    : null,
               ),
             ],
           ],
@@ -514,7 +578,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 padding: EdgeInsets.fromLTRB(16, 8, 16, 8),
                 child: Align(
                   alignment: Alignment.centerLeft,
-                  child: Text('Тема', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                  child: Text(
+                    'Тема',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                  ),
                 ),
               ),
               ListTile(
@@ -557,7 +624,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final info = await PackageInfo.fromPlatform();
       final v = info.version.trim();
       final b = info.buildNumber.trim();
-      versionLine = (v.isNotEmpty && b.isNotEmpty) ? 'Версия: $v+$b' : (v.isNotEmpty ? 'Версия: $v' : 'Версия: —');
+      versionLine = (v.isNotEmpty && b.isNotEmpty)
+          ? 'Версия: $v+$b'
+          : (v.isNotEmpty ? 'Версия: $v' : 'Версия: —');
     } catch (_) {}
 
     if (!context.mounted) return;
@@ -581,7 +650,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onPressed: () async {
               await Clipboard.setData(const ClipboardData(text: repoUrl));
               if (!context.mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ссылка на GitHub скопирована')));
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Ссылка на GitHub скопирована')),
+              );
             },
             icon: const Icon(Icons.copy),
             label: const Text('Скопировать ссылку'),
@@ -600,17 +671,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 18),
         children: [
-          Text('Авторелогин', style: t.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
+          Text(
+            'Авторелогин',
+            style: t.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+          ),
           const SizedBox(height: 10),
           _buildAuthReloginCard(),
 
           const SizedBox(height: 18),
-          Text('Уведомления', style: t.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
+          Text(
+            'Уведомления',
+            style: t.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+          ),
           const SizedBox(height: 10),
           const _PushCard(),
 
           const SizedBox(height: 18),
-          Text('Приложение', style: t.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
+          Text(
+            'Приложение',
+            style: t.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+          ),
           const SizedBox(height: 10),
           Card(
             elevation: 0,
@@ -618,19 +698,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 ListTile(
                   leading: const Icon(Icons.public_outlined),
-                  title: Text('Открыть ЭИОС (Web)', style: t.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+                  title: Text(
+                    'Открыть ЭИОС (Web)',
+                    style: t.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+                  ),
                   subtitle: const Text('Открыть my/ в WebView'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () {
                     Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const EiosWebViewScreen()),
+                      MaterialPageRoute(
+                        builder: (_) => const EiosWebViewScreen(),
+                      ),
                     );
                   },
                 ),
                 const Divider(height: 1),
                 ListTile(
                   leading: const Icon(Icons.palette_outlined),
-                  title: Text('Тема', style: t.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+                  title: Text(
+                    'Тема',
+                    style: t.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+                  ),
                   subtitle: Text(_themeLabel(themeController.mode)),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => _showThemePicker(context),
@@ -638,14 +726,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const Divider(height: 1),
                 ListTile(
                   leading: const Icon(Icons.bug_report_outlined),
-                  title: Text('Диагностика', style: t.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+                  title: Text(
+                    'Диагностика',
+                    style: t.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+                  ),
                   subtitle: const Text('Собрать отчёт'),
                   onTap: _openDiagnostics,
                 ),
                 const Divider(height: 1),
                 ListTile(
                   leading: const Icon(Icons.info_outline),
-                  title: Text('О приложении', style: t.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+                  title: Text(
+                    'О приложении',
+                    style: t.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+                  ),
                   subtitle: const Text('Версия, репозиторий'),
                   onTap: () => _showAbout(context),
                 ),
@@ -654,13 +748,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
 
           const SizedBox(height: 18),
-          Text('Аккаунт', style: t.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
+          Text(
+            'Аккаунт',
+            style: t.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+          ),
           const SizedBox(height: 10),
           Card(
             elevation: 0,
             child: ListTile(
               leading: const Icon(Icons.logout),
-              title: Text('Выйти', style: t.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+              title: Text(
+                'Выйти',
+                style: t.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+              ),
               subtitle: const Text('Очистить сессию и войти заново'),
               onTap: () => _logout(context),
             ),
@@ -671,56 +771,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 }
 
-class _PushCard extends StatelessWidget {
-  const _PushCard();
-
-  @override
-  Widget build(BuildContext context) {
-    final ns = NotificationService.instance;
-    final t = Theme.of(context).textTheme;
-
-    return Card(
-      elevation: 0,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: ValueListenableBuilder<bool>(
-          valueListenable: ns.enabled,
-          builder: (context, on, _) {
-            return SwitchListTile(
-              secondary: const Icon(Icons.notifications_active_outlined),
-              title: Text('Включить пуши', style: t.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
-              subtitle: const Text('Уведомления об изменениях в расписании'),
-              value: on,
-              onChanged: (v) async {
-                try {
-                  await ns.setEnabled(v);
-                } catch (e) {
-                  if (!context.mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Не удалось изменить настройку пушей: $e')),
-                  );
-                }
-              },
-            );
-          },
-        ),
-      ),
-    );
-  }
-}
-
 class EiosWebViewScreen extends StatelessWidget {
   const EiosWebViewScreen({super.key});
 
-  static const String _url = 'https://eos.imes.su/my/';
+  static const String _url = EiosEndpoints.my;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('ЭИОС (Web)')),
-      body: InAppWebView(
-        initialUrlRequest: URLRequest(url: WebUri(_url)),
-      ),
+      body: InAppWebView(initialUrlRequest: URLRequest(url: WebUri(_url))),
     );
   }
 }

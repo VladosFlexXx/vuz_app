@@ -128,12 +128,20 @@ class _BootGateState extends State<_BootGate> {
   }
 
   Future<void> _go() async {
-    const storage = FlutterSecureStorage();
-    final cookieHeader = await storage.read(key: 'cookie_header');
+    String cookieHeader = '';
+    try {
+      const storage = FlutterSecureStorage();
+      cookieHeader = (await storage.read(key: 'cookie_header')) ?? '';
+    } catch (_) {
+      cookieHeader = '';
+    }
 
     if (!mounted) return;
 
-    if (cookieHeader != null && cookieHeader.trim().isNotEmpty) {
+    final normalized = cookieHeader.trim();
+    final hasSession = normalized.contains('MoodleSession=');
+
+    if (normalized.isNotEmpty && hasSession) {
       Navigator.of(context).pushReplacementNamed('/home');
     } else {
       Navigator.of(context).pushReplacementNamed('/login');

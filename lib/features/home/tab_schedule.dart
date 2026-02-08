@@ -8,6 +8,15 @@ import '../schedule/week_parity.dart';
 import '../schedule/week_parity_service.dart';
 import '../schedule/week_utils.dart';
 
+part '../schedule/ui_parts/unified_header_card.dart';
+part '../schedule/ui_parts/week_dots_row_animated.dart';
+part '../schedule/ui_parts/week_dots_row.dart';
+part '../schedule/ui_parts/day_page.dart';
+part '../schedule/ui_parts/lesson_card.dart';
+part '../schedule/ui_parts/info_chip.dart';
+part '../schedule/ui_parts/pill.dart';
+part '../schedule/ui_parts/tap_pill.dart';
+
 enum ScheduleUiFilter { all, changes } // changes = changed + cancelled
 
 class ScheduleTab extends StatefulWidget {
@@ -153,9 +162,11 @@ class _ScheduleTabState extends State<ScheduleTab>
   List<Lesson> _applyUiFilter(List<Lesson> lessons) {
     if (_filter == ScheduleUiFilter.changes) {
       return lessons
-          .where((l) =>
-              l.status == LessonStatus.changed ||
-              l.status == LessonStatus.cancelled)
+          .where(
+            (l) =>
+                l.status == LessonStatus.changed ||
+                l.status == LessonStatus.cancelled,
+          )
           .toList();
     }
     return lessons;
@@ -267,8 +278,9 @@ class _ScheduleTabState extends State<ScheduleTab>
     final idx = now.weekday - 1;
 
     setState(() {
-      _weekSlideDir =
-          week.isAfter(_uiWeekStart) ? 1 : (week.isBefore(_uiWeekStart) ? -1 : 0);
+      _weekSlideDir = week.isAfter(_uiWeekStart)
+          ? 1
+          : (week.isBefore(_uiWeekStart) ? -1 : 0);
 
       _uiWeekStart = week;
       _contentWeekStart = week;
@@ -401,8 +413,9 @@ class _ScheduleTabState extends State<ScheduleTab>
                   Expanded(
                     child: Text(
                       statusText,
-                      style:
-                          t.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+                      style: t.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
                   ),
                 ],
@@ -447,8 +460,9 @@ class _ScheduleTabState extends State<ScheduleTab>
       animation: repo,
       builder: (context, _) {
         final uiParity = WeekParityService.parityFor(_uiWeekStart);
-        final uiParityText =
-            uiParity == WeekParity.even ? 'чётная неделя' : 'нечётная неделя';
+        final uiParityText = uiParity == WeekParity.even
+            ? 'чётная неделя'
+            : 'нечётная неделя';
 
         final updatedAt = repo.updatedAt;
 
@@ -465,15 +479,19 @@ class _ScheduleTabState extends State<ScheduleTab>
         final next = _nextLesson(dayLessons, contentDate);
 
         final weekChangesTotal = contentWeekLessons
-            .where((l) =>
-                l.status == LessonStatus.changed ||
-                l.status == LessonStatus.cancelled)
+            .where(
+              (l) =>
+                  l.status == LessonStatus.changed ||
+                  l.status == LessonStatus.cancelled,
+            )
             .length;
 
         final dayChanges = dayLessonsAll
-            .where((l) =>
-                l.status == LessonStatus.changed ||
-                l.status == LessonStatus.cancelled)
+            .where(
+              (l) =>
+                  l.status == LessonStatus.changed ||
+                  l.status == LessonStatus.cancelled,
+            )
             .length;
 
         final dayTitle =
@@ -496,15 +514,17 @@ class _ScheduleTabState extends State<ScheduleTab>
         // Иначе — пользователь "листает неделю", но расписание остаётся прежним => не нужно вводить в заблуждение.
         final int? filledSelectedIndex =
             WeekUtils.sameWeek(_uiWeekStart, _contentWeekStart)
-                ? _selectedIndex
-                : null;
+            ? _selectedIndex
+            : null;
 
         return Scaffold(
           appBar: AppBar(
             title: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(repo.loading ? 'Расписание (обновление...)' : 'Расписание'),
+                Text(
+                  repo.loading ? 'Расписание (обновление...)' : 'Расписание',
+                ),
                 Text(
                   _weekTitle(_uiWeekStart),
                   style: t.labelMedium?.copyWith(fontWeight: FontWeight.w700),
@@ -531,7 +551,9 @@ class _ScheduleTabState extends State<ScheduleTab>
                 ),
               IconButton(
                 tooltip: 'Обновить',
-                onPressed: repo.loading ? null : () => repo.refresh(force: true),
+                onPressed: repo.loading
+                    ? null
+                    : () => repo.refresh(force: true),
                 icon: const Icon(Icons.refresh),
               ),
             ],
@@ -614,8 +636,10 @@ class _ScheduleTabState extends State<ScheduleTab>
                                 begin: Offset(beginX, 0),
                                 end: Offset.zero,
                               ).animate(anim),
-                              child:
-                                  FadeTransition(opacity: anim, child: child),
+                              child: FadeTransition(
+                                opacity: anim,
+                                child: child,
+                              ),
                             ),
                           );
                         },
@@ -644,651 +668,6 @@ class _ScheduleTabState extends State<ScheduleTab>
           ),
         );
       },
-    );
-  }
-}
-
-class _UnifiedHeaderCard extends StatelessWidget {
-  final String parityText;
-  final String rangeText;
-  final String updatedText;
-
-  final int weekChangesTotal;
-  final int dayChanges;
-
-  final String dayTitle;
-
-  final String todayLabel;
-  final VoidCallback onTodayTap;
-
-  final bool changesOnly;
-  final VoidCallback onToggleChangesOnly;
-
-  const _UnifiedHeaderCard({
-    required this.parityText,
-    required this.rangeText,
-    required this.updatedText,
-    required this.weekChangesTotal,
-    required this.dayChanges,
-    required this.dayTitle,
-    required this.todayLabel,
-    required this.onTodayTap,
-    required this.changesOnly,
-    required this.onToggleChangesOnly,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final t = Theme.of(context).textTheme;
-
-    final titleStyle = t.titleMedium?.copyWith(fontWeight: FontWeight.w900);
-    final subStyle = t.bodySmall?.copyWith(
-      fontWeight: FontWeight.w800,
-      color: cs.onSurface.withValues(alpha: 0.78),
-    );
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _Pill(icon: Icons.swap_vert_circle_outlined, text: parityText),
-                _Pill(icon: Icons.date_range_outlined, text: rangeText),
-                if (weekChangesTotal > 0)
-                  _Pill(
-                    icon: Icons.edit_calendar_outlined,
-                    text: 'Изм.: $weekChangesTotal',
-                    tone: _PillTone.warn,
-                  ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Icon(Icons.sync, size: 18, color: cs.onSurface.withValues(alpha: 0.75)),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Обновлено: $updatedText',
-                    style: subStyle,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Text(
-              dayChanges > 0
-                  ? 'В выбранный день изменений: $dayChanges'
-                  : 'Сегодня изменений нет',
-              style: t.bodySmall?.copyWith(color: cs.onSurface.withValues(alpha: 0.72)),
-            ),
-            const SizedBox(height: 12),
-            Divider(color: cs.outlineVariant.withValues(alpha: 0.35), height: 1),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    dayTitle,
-                    style: titleStyle,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                _TapPill(
-                  icon: Icons.today,
-                  text: todayLabel,
-                  active: true,
-                  onTap: onTodayTap,
-                ),
-                const SizedBox(width: 8),
-                _TapPill(
-                  icon: Icons.edit_calendar_outlined,
-                  text: 'Изм.',
-                  active: changesOnly,
-                  onTap: onToggleChangesOnly,
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _WeekDotsRowAnimated extends StatelessWidget {
-  final DateTime weekStart;
-  final int slideDir; // -1 / 0 / +1
-
-  /// Заполненный (выбранный) день, или null если UI-неделя != неделя расписания.
-  final int? filledSelectedIndex;
-
-  /// Сегодня (обводка), если UI-неделя = текущая.
-  final int? todayIndex;
-
-  final List<String> labels;
-
-  final ValueChanged<int> onTap;
-  final ValueChanged<int> onSwipeWeek; // -1 / +1
-
-  const _WeekDotsRowAnimated({
-    required this.weekStart,
-    required this.slideDir,
-    required this.filledSelectedIndex,
-    required this.todayIndex,
-    required this.labels,
-    required this.onTap,
-    required this.onSwipeWeek,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final key = ValueKey('${weekStart.year}-${weekStart.month}-${weekStart.day}');
-
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onHorizontalDragEnd: (details) {
-        final v = details.primaryVelocity ?? 0;
-        if (v.abs() < 250) return;
-        if (v < 0) {
-          onSwipeWeek(1);
-        } else {
-          onSwipeWeek(-1);
-        }
-      },
-      child: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 260),
-        switchInCurve: Curves.easeOutCubic,
-        switchOutCurve: Curves.easeInCubic,
-        transitionBuilder: (child, anim) {
-          final beginX =
-              slideDir == 0 ? 0.0 : (slideDir > 0 ? 0.18 : -0.18);
-
-          return ClipRect(
-            child: SlideTransition(
-              position: Tween<Offset>(
-                begin: Offset(beginX, 0),
-                end: Offset.zero,
-              ).animate(anim),
-              child: FadeTransition(opacity: anim, child: child),
-            ),
-          );
-        },
-        child: _WeekDotsRow(
-          key: key,
-          weekStart: weekStart,
-          filledSelectedIndex: filledSelectedIndex,
-          todayIndex: todayIndex,
-          labels: labels,
-          onTap: onTap,
-        ),
-      ),
-    );
-  }
-}
-
-/// КРУЖКИ:
-/// - выбранный: ЗАЛИВКА (filled)
-/// - сегодня: ОБВОДКА (outline), но только если сегодня НЕ выбран (иначе и так видно)
-/// - никаких точек
-class _WeekDotsRow extends StatelessWidget {
-  final DateTime weekStart;
-  final int? filledSelectedIndex;
-  final int? todayIndex;
-  final List<String> labels;
-  final ValueChanged<int> onTap;
-
-  const _WeekDotsRow({
-    super.key,
-    required this.weekStart,
-    required this.filledSelectedIndex,
-    required this.todayIndex,
-    required this.labels,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        const gap = 8.0;
-        final raw = (constraints.maxWidth - gap * 6) / 7;
-        final size = raw.clamp(40.0, 54.0);
-
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: List.generate(labels.length, (i) {
-            final isSelected =
-                filledSelectedIndex != null && i == filledSelectedIndex;
-            final isToday = todayIndex != null && i == todayIndex;
-
-            final date = weekStart.add(Duration(days: i));
-            final dayNum = date.day;
-
-            final bg = isSelected
-                ? cs.primary.withValues(alpha: 0.95)
-                : cs.surfaceContainerHighest.withValues(alpha: 0.30);
-
-            // сегодня обводим только если НЕ выбран (иначе будет “обводка + заливка”)
-            final showTodayOutline = isToday && !isSelected;
-
-            final borderColor = isSelected
-                ? cs.primary
-                : (showTodayOutline
-                    ? cs.primary.withValues(alpha: 0.75)
-                    : cs.outlineVariant.withValues(alpha: 0.35));
-
-            final borderWidth = showTodayOutline ? 1.6 : (isSelected ? 0.0 : 1.0);
-
-            final fgMain = isSelected ? cs.onPrimary : cs.onSurface.withValues(alpha: 0.82);
-            final fgSub = isSelected
-                ? cs.onPrimary.withValues(alpha: 0.85)
-                : cs.onSurface.withValues(alpha: 0.45);
-
-            return InkWell(
-              borderRadius: BorderRadius.circular(999),
-              onTap: () => onTap(i),
-              child: Container(
-                width: size,
-                height: size,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: bg,
-                  border: borderWidth == 0.0
-                      ? null
-                      : Border.all(color: borderColor, width: borderWidth),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        labels[i],
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w900,
-                          height: 1.0,
-                          color: fgMain,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        '$dayNum',
-                        style: TextStyle(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w900,
-                          height: 1.0,
-                          color: fgSub,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }),
-        );
-      },
-    );
-  }
-}
-
-class _DayPage extends StatelessWidget {
-  final DateTime date;
-
-  final List<Lesson> lessons;
-  final Lesson? nextLesson;
-
-  final bool Function(Lesson l) isOngoing;
-  final bool Function(Lesson l) isPast;
-
-  final void Function(Lesson l) onLessonTap;
-
-  const _DayPage({
-    required this.date,
-    required this.lessons,
-    required this.nextLesson,
-    required this.isOngoing,
-    required this.isPast,
-    required this.onLessonTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final t = Theme.of(context).textTheme;
-
-    if (lessons.isEmpty) {
-      return Row(
-        children: [
-          Icon(Icons.event_busy_outlined, color: cs.primary),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              'Нет занятий',
-              style: t.titleMedium?.copyWith(fontWeight: FontWeight.w900),
-            ),
-          ),
-        ],
-      );
-    }
-
-    return Column(
-      children: [
-        for (int i = 0; i < lessons.length; i++) ...[
-          _LessonCard(
-            lesson: lessons[i],
-            isToday: WeekUtils.isSameDay(date, DateTime.now()),
-            isOngoing: isOngoing(lessons[i]),
-            isNext: nextLesson != null &&
-                nextLesson!.day == lessons[i].day &&
-                nextLesson!.time == lessons[i].time &&
-                nextLesson!.subject == lessons[i].subject,
-            isPast: isPast(lessons[i]),
-            onTap: () => onLessonTap(lessons[i]),
-          ),
-        ],
-      ],
-    );
-  }
-}
-
-class _LessonCard extends StatelessWidget {
-  final Lesson lesson;
-
-  final bool isToday;
-  final bool isOngoing;
-  final bool isNext;
-  final bool isPast;
-
-  final VoidCallback onTap;
-
-  const _LessonCard({
-    required this.lesson,
-    required this.isToday,
-    required this.isOngoing,
-    required this.isNext,
-    required this.isPast,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final t = Theme.of(context).textTheme;
-
-    final isCancelled = lesson.status == LessonStatus.cancelled;
-
-    Color bg;
-    Color border;
-    IconData? badgeIcon;
-    String? badgeText;
-
-    if (isOngoing) {
-      bg = cs.tertiaryContainer.withValues(alpha: 0.75);
-      border = cs.tertiary.withValues(alpha: 0.55);
-      badgeIcon = Icons.play_circle_outline;
-      badgeText = 'идёт';
-    } else if (isNext) {
-      bg = cs.primaryContainer.withValues(alpha: 0.55);
-      border = cs.primary.withValues(alpha: 0.45);
-      badgeIcon = Icons.skip_next_outlined;
-      badgeText = 'следующая';
-    } else if (lesson.status == LessonStatus.changed) {
-      bg = cs.primaryContainer.withValues(alpha: 0.42);
-      border = cs.primary.withValues(alpha: 0.40);
-      badgeIcon = Icons.edit_calendar_outlined;
-      badgeText = 'изменение';
-    } else if (lesson.status == LessonStatus.cancelled) {
-      bg = cs.errorContainer.withValues(alpha: 0.55);
-      border = cs.error.withValues(alpha: 0.45);
-      badgeIcon = Icons.cancel_outlined;
-      badgeText = 'отмена';
-    } else {
-      bg = cs.surfaceContainerHighest.withValues(alpha: 0.22);
-      border = cs.outlineVariant.withValues(alpha: 0.35);
-      badgeIcon = null;
-      badgeText = null;
-    }
-
-    final faded = isPast && isToday;
-    final opacity = faded ? 0.72 : 1.0;
-
-    final titleStyle = t.bodyLarge?.copyWith(
-      fontWeight: FontWeight.w900,
-      decoration: isCancelled ? TextDecoration.lineThrough : null,
-    );
-
-    final timeStyle = t.bodySmall?.copyWith(
-      fontWeight: FontWeight.w900,
-      color: cs.onSurface.withValues(alpha: 0.80),
-      decoration: isCancelled ? TextDecoration.lineThrough : null,
-    );
-
-    return Opacity(
-      opacity: opacity,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: onTap,
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 10),
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: bg,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: border),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Text(lesson.time, style: timeStyle),
-                  const Spacer(),
-                  if (badgeText != null)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: cs.surface.withValues(alpha: 0.70),
-                        borderRadius: BorderRadius.circular(999),
-                        border: Border.all(
-                            color: cs.outlineVariant.withValues(alpha: 0.35)),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (badgeIcon != null) ...[
-                            Icon(badgeIcon,
-                                size: 16,
-                                color: cs.onSurface.withValues(alpha: 0.80)),
-                            const SizedBox(width: 6),
-                          ],
-                          Text(
-                            badgeText,
-                            style: t.labelSmall
-                                ?.copyWith(fontWeight: FontWeight.w900),
-                          ),
-                        ],
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(lesson.subject, style: titleStyle),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  if (lesson.type.trim().isNotEmpty)
-                    _InfoChip(icon: Icons.info_outline, text: lesson.type),
-                  if (lesson.place.trim().isNotEmpty)
-                    _InfoChip(icon: Icons.place_outlined, text: lesson.place),
-                  if (lesson.teacher.trim().isNotEmpty)
-                    _InfoChip(icon: Icons.person_outline, text: lesson.teacher),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _InfoChip extends StatelessWidget {
-  final IconData icon;
-  final String text;
-
-  const _InfoChip({
-    required this.icon,
-    required this.text,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final t = Theme.of(context).textTheme;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-      decoration: BoxDecoration(
-        color: cs.surface.withValues(alpha: 0.70),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.35)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: cs.onSurface.withValues(alpha: 0.80)),
-          const SizedBox(width: 6),
-          Text(
-            text,
-            style: t.bodySmall?.copyWith(fontWeight: FontWeight.w800),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-enum _PillTone { normal, warn }
-
-class _Pill extends StatelessWidget {
-  final IconData icon;
-  final String text;
-  final _PillTone tone;
-
-  const _Pill({
-    required this.icon,
-    required this.text,
-    this.tone = _PillTone.normal,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final t = Theme.of(context).textTheme;
-
-    Color border = cs.outlineVariant.withValues(alpha: 0.35);
-    Color bg = cs.surfaceContainerHighest.withValues(alpha: 0.35);
-    Color fg = cs.onSurface.withValues(alpha: 0.80);
-
-    if (tone == _PillTone.warn) {
-      border = cs.primary.withValues(alpha: 0.40);
-      bg = cs.primaryContainer.withValues(alpha: 0.35);
-      fg = cs.primary;
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: border),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: fg),
-          const SizedBox(width: 6),
-          Text(
-            text,
-            style:
-                t.labelSmall?.copyWith(fontWeight: FontWeight.w900, color: fg),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TapPill extends StatelessWidget {
-  final IconData icon;
-  final String text;
-  final bool active;
-  final VoidCallback onTap;
-
-  const _TapPill({
-    required this.icon,
-    required this.text,
-    required this.active,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final t = Theme.of(context).textTheme;
-
-    final bg = active
-        ? cs.primary.withValues(alpha: 0.18)
-        : cs.surfaceContainerHighest.withValues(alpha: 0.28);
-    final border = active
-        ? cs.primary.withValues(alpha: 0.45)
-        : cs.outlineVariant.withValues(alpha: 0.35);
-    final fg = active ? cs.primary : cs.onSurface.withValues(alpha: 0.78);
-
-    return InkWell(
-      borderRadius: BorderRadius.circular(999),
-      onTap: onTap,
-      child: Container(
-        height: 36,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: border),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 16, color: fg),
-            const SizedBox(width: 6),
-            Text(
-              text,
-              style:
-                  t.labelSmall?.copyWith(fontWeight: FontWeight.w900, color: fg),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
