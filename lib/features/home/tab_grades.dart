@@ -766,8 +766,104 @@ class _GradesTabState extends State<GradesTab>
     }
   }
 
+  bool _hasDataSection(StudySection section) {
+    switch (section) {
+      case StudySection.disciplines:
+        return gradesRepo.courses.isNotEmpty;
+      case StudySection.studyPlan:
+        return planRepo.items.isNotEmpty;
+      case StudySection.recordbook:
+        return recordRepo.gradebooks.isNotEmpty;
+    }
+  }
+
+  Widget _skeletonBlock(double h, {double radius = 14}) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      height: h,
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest.withValues(alpha: 0.36),
+        borderRadius: BorderRadius.circular(radius),
+      ),
+    );
+  }
+
+  Widget _sectionSkeleton(StudySection section) {
+    switch (section) {
+      case StudySection.disciplines:
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _skeletonBlock(54),
+            const SizedBox(height: 12),
+            _skeletonBlock(18, radius: 8),
+            const SizedBox(height: 10),
+            for (var i = 0; i < 6; i++) ...[
+              _skeletonBlock(104, radius: 18),
+              const SizedBox(height: 10),
+            ],
+          ],
+        );
+      case StudySection.studyPlan:
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _skeletonBlock(40, radius: 999),
+            const SizedBox(height: 12),
+            for (var i = 0; i < 8; i++) ...[
+              _skeletonBlock(80, radius: 16),
+              const SizedBox(height: 10),
+            ],
+          ],
+        );
+      case StudySection.recordbook:
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _skeletonBlock(52),
+            const SizedBox(height: 12),
+            _skeletonBlock(40, radius: 999),
+            const SizedBox(height: 12),
+            for (var i = 0; i < 7; i++) ...[
+              _skeletonBlock(84, radius: 16),
+              const SizedBox(height: 10),
+            ],
+          ],
+        );
+    }
+  }
+
   Widget _sectionPage(StudySection section, Widget child) {
     final isLoading = _isLoadingSection(section);
+    final hasData = _hasDataSection(section);
+    final showSkeleton = isLoading && !hasData;
+    final content = AnimatedSwitcher(
+      duration: const Duration(milliseconds: 220),
+      switchInCurve: Curves.easeOutCubic,
+      switchOutCurve: Curves.easeInCubic,
+      child: showSkeleton
+          ? KeyedSubtree(
+              key: ValueKey('skeleton_${section.name}'),
+              child: _sectionSkeleton(section),
+            )
+          : TweenAnimationBuilder<double>(
+              key: ValueKey('content_${section.name}_${isLoading ? 'loading' : 'ready'}'),
+              tween: Tween(begin: 0.0, end: 1.0),
+              duration: const Duration(milliseconds: 240),
+              curve: Curves.easeOutCubic,
+              builder: (context, v, w) {
+                return Opacity(
+                  opacity: v,
+                  child: Transform.translate(
+                    offset: Offset(0, (1 - v) * 10),
+                    child: w,
+                  ),
+                );
+              },
+              child: child,
+            ),
+    );
+
     return RefreshIndicator(
       onRefresh: () => _refreshSection(section),
       child: ListView(
@@ -778,7 +874,7 @@ class _GradesTabState extends State<GradesTab>
             const LinearProgressIndicator(minHeight: 3),
             const SizedBox(height: 12),
           ],
-          child,
+          content,
         ],
       ),
     );

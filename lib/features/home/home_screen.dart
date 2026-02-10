@@ -144,8 +144,14 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return WillPopScope(
-      onWillPop: _onWillPop,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        final shouldExit = await _onWillPop();
+        if (!context.mounted || !shouldExit) return;
+        Navigator.of(context).pop();
+      },
       child: Scaffold(
         body: SafeArea(
           child: Stack(
@@ -206,18 +212,18 @@ class _GlassBottomNav extends StatelessWidget {
               borderRadius: BorderRadius.circular(24),
               color: isDark
                   ? const Color(0xFF1B2738).withValues(alpha: 0.44)
-                  : cs.surface.withValues(alpha: 0.62),
+                  : cs.surface.withValues(alpha: 0.40),
               border: Border.all(
                 color: isDark
                     ? Colors.white.withValues(alpha: 0.12)
-                    : cs.outlineVariant.withValues(alpha: 0.42),
+                    : cs.outlineVariant.withValues(alpha: 0.24),
               ),
               boxShadow: [
                 BoxShadow(
                   color: isDark
                       ? Colors.black.withValues(alpha: 0.22)
-                      : cs.shadow.withValues(alpha: 0.10),
-                  blurRadius: isDark ? 20 : 14,
+                      : cs.shadow.withValues(alpha: 0.06),
+                  blurRadius: isDark ? 20 : 10,
                   offset: const Offset(0, 6),
                 ),
               ],
