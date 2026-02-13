@@ -3,7 +3,7 @@ description: "A new Flutter project."
 
 publish_to: 'none' 
 
-version: 0.3.2+20
+version: 0.3.3+21
 
 environment:
   sdk: ^3.10.7
@@ -39,6 +39,8 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/splash/logo_big.png
 
 flutter_icons:
   android: true

@@ -1,5 +1,8 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -134,7 +137,10 @@ class _BootGate extends StatefulWidget {
 
 class _BootGateState extends State<_BootGate> {
   static const _kMinBootScreen = Duration(milliseconds: 2800);
+  static const _kFadeOutDuration = Duration(milliseconds: 360);
   late final DateTime _bootStartedAt;
+  bool _navigating = false;
+  bool _fadeOut = false;
 
   @override
   void initState() {
@@ -165,8 +171,7 @@ class _BootGateState extends State<_BootGate> {
 
     if (DemoMode.instance.enabled) {
       await _ensureMinBootScreen();
-      if (!mounted) return;
-      Navigator.of(context).pushReplacementNamed('/home');
+      await _navigateWithFade('/home');
       return;
     }
 
@@ -178,86 +183,186 @@ class _BootGateState extends State<_BootGate> {
       cookieHeader = '';
     }
 
-    if (!mounted) return;
     await _ensureMinBootScreen();
-    if (!mounted) return;
 
     final normalized = cookieHeader.trim();
     final hasSession = normalized.contains('MoodleSession=');
 
     if (normalized.isNotEmpty && hasSession) {
-      Navigator.of(context).pushReplacementNamed('/home');
+      await _navigateWithFade('/home');
     } else {
-      Navigator.of(context).pushReplacementNamed('/login');
+      await _navigateWithFade('/login');
     }
+  }
+
+  Future<void> _navigateWithFade(String route) async {
+    if (!mounted || _navigating) return;
+    _navigating = true;
+    setState(() => _fadeOut = true);
+    await Future<void>.delayed(_kFadeOutDuration);
+    if (!mounted) return;
+    Navigator.of(context).pushReplacementNamed(route);
   }
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final t = Theme.of(context).textTheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              cs.surfaceContainerHighest.withValues(alpha: 0.55),
-              cs.surface,
-            ],
-          ),
-        ),
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 28),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 78,
-                  height: 78,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: cs.primary.withValues(alpha: 0.16),
-                    border: Border.all(
-                      color: cs.primary.withValues(alpha: 0.35),
-                    ),
-                  ),
-                  child: Icon(
-                    Icons.school_rounded,
-                    size: 40,
-                    color: cs.primary,
-                  ),
+      body: AnimatedOpacity(
+        opacity: _fadeOut ? 0 : 1,
+        duration: _kFadeOutDuration,
+        curve: Curves.easeOutCubic,
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                cs.surfaceContainerHighest.withValues(
+                  alpha: isDark ? 0.55 : 0.72,
                 ),
-                const SizedBox(height: 18),
-                Text(
-                  'ЭИОС ИМЭС',
-                  style: t.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Подготавливаем данные',
-                  style: t.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
-                ),
-                const SizedBox(height: 18),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(999),
-                  child: SizedBox(
-                    width: 170,
-                    child: LinearProgressIndicator(
-                      minHeight: 6,
-                      color: cs.primary,
-                      backgroundColor: cs.surfaceContainerHighest,
-                    ),
-                  ),
-                ),
+                cs.surface,
               ],
             ),
+          ),
+          child: const Center(
+            child: _LogoRevealSplash(),
           ),
         ),
       ),
     );
+  }
+}
+
+class _LogoRevealSplash extends StatefulWidget {
+  const _LogoRevealSplash();
+
+  @override
+  State<_LogoRevealSplash> createState() => _LogoRevealSplashState();
+}
+
+class _LogoRevealSplashState extends State<_LogoRevealSplash>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  ui.Image? _image;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1250),
+    )..repeat();
+    _loadImage();
+  }
+
+  Future<void> _loadImage() async {
+    final data = await rootBundle.load('assets/splash/logo_big.png');
+    final bytes = data.buffer.asUint8List();
+    final codec = await ui.instantiateImageCodec(bytes);
+    final frame = await codec.getNextFrame();
+    if (!mounted) return;
+    setState(() => _image = frame.image);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final targetWidth = (screenWidth * 0.98).clamp(340.0, 980.0).toDouble();
+    final ratio = _image == null
+        ? (1024.0 / 512.0)
+        : (_image!.width / _image!.height);
+    return SizedBox(
+      width: targetWidth,
+      child: AspectRatio(
+        aspectRatio: ratio,
+        child: AnimatedBuilder(
+          animation: _controller,
+          builder: (_, child) {
+            return CustomPaint(
+              painter: _LogoRevealPainter(
+                image: _image,
+                progress: _controller.value,
+                tint: cs.primary,
+              ),
+              child: child,
+            );
+          },
+          child: const SizedBox.expand(),
+        ),
+      ),
+    );
+  }
+}
+
+class _LogoRevealPainter extends CustomPainter {
+  final ui.Image? image;
+  final double progress;
+  final Color tint;
+
+  const _LogoRevealPainter({
+    required this.image,
+    required this.progress,
+    required this.tint,
+  });
+
+  Path _maskPath(Size size) {
+    final w = size.width;
+    final h = size.height;
+    return Path()
+      ..moveTo(w * 0.12, -h * 0.24)
+      ..cubicTo(w * 0.13, -h * 0.08, w * 0.14, h * 0.12, w * 0.16, h * 0.30)
+      ..cubicTo(w * 0.25, h * 0.45, w * 0.30, h * 0.76, w * 0.40, h * 0.70)
+      ..cubicTo(w * 0.52, h * 0.62, w * 0.56, h * 0.24, w * 0.67, h * 0.30)
+      ..cubicTo(w * 0.78, h * 0.38, w * 0.83, h * 0.66, w * 0.90, h * 0.70);
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (image == null) return;
+
+    final path = _maskPath(size);
+    final metric = path.computeMetrics().first;
+    final revealLen = metric.length * progress;
+    final brushRadius = size.shortestSide * 0.34;
+
+    // Собираем "кисть" как Path из окружностей вдоль кривой.
+    final revealPath = Path();
+    final steps = 220;
+    for (var i = 0; i <= steps; i++) {
+      final d = revealLen * (i / steps);
+      final tangent = metric.getTangentForOffset(d);
+      if (tangent != null) {
+        revealPath.addOval(
+          Rect.fromCircle(center: tangent.position, radius: brushRadius),
+        );
+      }
+    }
+
+    // Рендерим картинку только внутри reveal-path (без saveLayer/srcIn).
+    canvas.save();
+    canvas.clipPath(revealPath);
+    paintImage(
+      canvas: canvas,
+      rect: Offset.zero & size,
+      image: image!,
+      fit: BoxFit.contain,
+      filterQuality: FilterQuality.high,
+    );
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant _LogoRevealPainter oldDelegate) {
+    return oldDelegate.progress != progress || oldDelegate.image != image;
   }
 }
