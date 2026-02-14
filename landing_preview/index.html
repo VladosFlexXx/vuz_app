@@ -1,0 +1,206 @@
+﻿<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My IMES | Student App</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body class="text-white">
+  <div class="bg-glow bg-glow-a"></div>
+  <div class="bg-glow bg-glow-b"></div>
+
+  <header class="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl border-b border-white/10 bg-black/50">
+    <div class="topbar-inner px-4 md:px-6 h-20 flex items-center justify-between gap-3">
+      <div class="topbar-left">
+        <img src="./assets/logo_header.gif" alt="ИМЭС" class="topbar-logo opacity-95" />
+        <div class="topbar-brand-copy">
+          <div class="topbar-brand-title">Мой ИМЭС</div>
+          <div class="topbar-brand-sub" data-i18n="headerOfficial">OFFICIAL APP</div>
+        </div>
+      </div>
+
+      <nav class="topbar-nav">
+        <a href="#features" data-i18n="navFeatures">Возможности</a>
+        <a href="#plans" data-i18n="navPlans">Планы</a>
+        <a href="#faq" data-i18n="navFaq">FAQ</a>
+      </nav>
+
+      <div class="topbar-actions">
+        <a href="https://github.com/VladosFlexXx/imes_app/releases/latest" class="topbar-download" data-download-apk>
+          <i data-lucide="download" class="w-4 h-4"></i>
+          <span data-i18n="headerDownload">Скачать Beta</span>
+          <span class="metric-version">v0.3.4</span>
+        </a>
+        <div class="lang-toggle" aria-label="Language toggle">
+          <button id="lang-ru" class="lang-btn active">RU</button>
+          <button id="lang-en" class="lang-btn">EN</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="pt-28 pb-28">
+    <section class="max-w-7xl mx-auto px-4 md:px-6 grid lg:grid-cols-2 gap-10 items-center">
+      <div>
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-orange-500/15 border border-orange-500/30 text-orange-400 mb-5" data-i18n="badgeNew">
+          New release live
+        </div>
+        <h1 class="text-4xl md:text-6xl font-black leading-tight mb-5" data-i18n-html="heroTitle">Your university.<br>Your rhythm.<br><span class='hero-gradient'>Your rules in your pocket.</span></h1>
+        <p class="text-gray-300 text-lg leading-relaxed mb-8" data-i18n="heroText">Schedule, grades, profile and notifications in a native mobile flow for IMES students.</p>
+
+        <div class="hero-actions mb-5">
+          <a href="https://github.com/VladosFlexXx/imes_app/releases/latest" class="btn-primary hero-main-btn" data-download-apk>
+            <i data-lucide="smartphone" class="w-5 h-5"></i>
+            <span data-i18n="btnInstallNow">Установить сейчас</span>
+          </a>
+          <a href="https://github.com/VladosFlexXx/imes_app" class="hero-code-btn">
+            <i data-lucide="github" class="w-5 h-5"></i>
+            <span data-i18n="btnViewCode">Смотреть код</span>
+          </a>
+        </div>
+
+        <div class="hero-points">
+          <span class="hero-point">
+            <i data-lucide="shield-check" class="hero-point-icon hero-point-safe"></i>
+            <span data-i18n="pointSafe">Безопасно</span>
+          </span>
+          <span class="hero-point">
+            <i data-lucide="zap" class="hero-point-icon hero-point-fast"></i>
+            <span data-i18n="pointFast">Быстро</span>
+          </span>
+          <span class="hero-point">
+            <i data-lucide="moon" class="hero-point-icon hero-point-dark"></i>
+            <span data-i18n="pointDark">Dark Mode</span>
+          </span>
+        </div>
+      </div>
+
+      <div class="phone-wrap">
+        <img src="./assets/screens/main_crop.jpg" alt="App screen 1" class="phone-shot" /></div>
+    </section>
+
+    <section id="features" class="max-w-7xl mx-auto px-4 md:px-6 mt-16">
+      <h2 class="text-3xl md:text-4xl font-black mb-8" data-i18n="quickTitle">Start in 60 seconds</h2>
+      <div class="grid md:grid-cols-3 gap-4">
+        <article class="glass-card p-6 rounded-2xl">
+          <div class="step">1</div>
+          <h3 class="font-bold text-xl mb-2" data-i18n="quick1t">Install APK</h3>
+          <p class="text-gray-300" data-i18n="quick1d">Download the latest release from GitHub and install on Android.</p>
+        </article>
+        <article class="glass-card p-6 rounded-2xl">
+          <div class="step">2</div>
+          <h3 class="font-bold text-xl mb-2" data-i18n="quick2t">Sign in</h3>
+          <p class="text-gray-300" data-i18n="quick2d">Use your IMES credentials once and keep secure auto-login.</p>
+        </article>
+        <article class="glass-card p-6 rounded-2xl">
+          <div class="step">3</div>
+          <h3 class="font-bold text-xl mb-2" data-i18n="quick3t">Get updates</h3>
+          <p class="text-gray-300" data-i18n="quick3d">Track schedule changes and new grades through app notifications.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="plans" class="max-w-7xl mx-auto px-4 md:px-6 mt-16">
+      <div class="tech-stack glass-card rounded-2xl p-6 md:p-8">
+        <p class="tech-title" data-i18n="techTitle">Built with modern technologies</p>
+        <div class="tech-grid">
+          <div class="tech-item tech-flutter">
+            <i data-lucide="code-xml" class="tech-icon"></i>
+            <span>Flutter</span>
+          </div>
+          <div class="tech-item tech-dart">
+            <i data-lucide="cpu" class="tech-icon"></i>
+            <span>Dart</span>
+          </div>
+          <div class="tech-item tech-firebase">
+            <i data-lucide="flame" class="tech-icon"></i>
+            <span>Firebase</span>
+          </div>
+          <div class="tech-item tech-docker">
+            <i data-lucide="box" class="tech-icon"></i>
+            <span>Docker</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="max-w-7xl mx-auto px-4 md:px-6 mt-16">
+      <h2 class="text-3xl md:text-4xl font-black mb-8" data-i18n="screensTitle">Real app screens</h2>
+      <div class="grid md:grid-cols-3 gap-5">
+        <figure class="screen-card"><img src="./assets/screens/main_crop.jpg" alt="home" class="screen-img"></figure>
+        <figure class="screen-card"><img src="./assets/screens/schedule_crop.jpg" alt="schedule" class="screen-img"></figure>
+        <figure class="screen-card"><img src="./assets/screens/marks_crop.jpg" alt="grades" class="screen-img"></figure>
+      </div>
+      <p class="text-xs text-gray-500 mt-3" data-i18n="screenHint">Using files: main_crop.jpg / schedule_crop.jpg / marks_crop.jpg.</p>
+    </section>
+
+    <section class="max-w-7xl mx-auto px-4 md:px-6 mt-16">
+      <article class="glass-card p-7 rounded-2xl">
+        <h3 class="text-2xl font-black mb-4" data-i18n="securityTitle">Security</h3>
+        <ul class="space-y-2 text-gray-300">
+          <li data-i18n="security1">Credentials are stored locally in secure storage.</li>
+          <li data-i18n="security2">No password forwarding to third-party servers.</li>
+          <li data-i18n="security3">Diagnostic report excludes passwords.</li>
+        </ul>
+      </article>
+    </section>
+
+    <section id="faq" class="max-w-7xl mx-auto px-4 md:px-6 mt-6">
+      <article class="glass-card p-7 rounded-2xl">
+        <h3 class="text-2xl font-black mb-4" data-i18n="faqTitle">FAQ</h3>
+        <details class="faq"><summary data-i18n="faqQ1">Will there be an iOS version?</summary><p data-i18n="faqA1">Yes, planned for roadmap v1.0 after Android stabilization.</p></details>
+        <details class="faq"><summary data-i18n="faqQ2">How to update the app?</summary><p data-i18n="faqA2">Download latest APK from GitHub and install over previous build.</p></details>
+        <details class="faq"><summary data-i18n="faqQ3">Is this an official university app?</summary><p data-i18n="faqA3">It is a student project for IMES and is under active development.</p></details>
+        <details class="faq"><summary data-i18n="faqQ4">Will my account password be stored on server?</summary><p data-i18n="faqA4">No. Credentials are stored only on your device if you enable secure auto-login.</p></details>
+        <details class="faq"><summary data-i18n="faqQ5">Can I install updates over current version?</summary><p data-i18n="faqA5">Yes, if package signature is the same and new version code is higher.</p></details>
+        <details class="faq"><summary data-i18n="faqQ6">How to report a bug or suggest feature?</summary><p data-i18n="faqA6">Use GitHub Issues from the footer link and attach screenshots if possible.</p></details>
+      </article>
+    </section>
+
+    <section class="max-w-7xl mx-auto px-4 md:px-6 mt-20 pb-4">
+      <div class="cta-block">
+        <h2 class="cta-headline cta-gradient" data-i18n="ctaTitle">Try it first</h2>
+        <p class="cta-sub" data-i18n="ctaText">
+          The app is in open beta now. Download it, use it and help us make it better.
+        </p>
+        <div class="cta-row">
+          <a href="https://github.com/VladosFlexXx/imes_app/releases/latest" class="btn-primary cta-download" data-download-apk>
+            <i data-lucide="download" class="w-5 h-5"></i>
+            <span data-i18n="btnDownload">Download APK</span>
+            <span class="version-pill metric-version">v0.3.4</span>
+          </a>
+          <div class="cta-meta">
+            <span data-i18n="ctaAndroid">Android 8.0+</span>
+            <span>•</span>
+            <span data-i18n="ctaSize">15 MB</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <a class="mobile-cta" href="https://github.com/VladosFlexXx/imes_app/releases/latest" data-download-apk data-i18n="btnDownload">Download APK</a>
+
+  <footer class="site-footer">
+    <div class="max-w-7xl mx-auto px-4 md:px-6 site-footer-inner">
+      <div class="site-brand">
+        <img src="./assets/logo_big.png" alt="Logo" class="site-brand-logo" />
+        <span>© 2026 Student Project</span>
+      </div>
+      <div class="site-links">
+        <a href="https://github.com/VladosFlexXx/imes_app/blob/main/README_RU.md" data-i18n="footerAbout">About</a>
+        <a href="https://github.com/VladosFlexXx/imes_app/issues" data-i18n="footerBug">Report bug</a>
+        <a href="https://github.com/VladosFlexXx/imes_app">GitHub</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="./main.js"></script>
+</body>
+</html>
+
+
+
