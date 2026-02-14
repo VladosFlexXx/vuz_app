@@ -1,8 +1,5 @@
-import 'dart:ui' as ui;
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -136,7 +133,7 @@ class _BootGate extends StatefulWidget {
 }
 
 class _BootGateState extends State<_BootGate> {
-  static const _kMinBootScreen = Duration(milliseconds: 2800);
+  static const _kMinBootScreen = Duration(seconds: 6);
   static const _kFadeOutDuration = Duration(milliseconds: 360);
   late final DateTime _bootStartedAt;
   bool _navigating = false;
@@ -227,142 +224,27 @@ class _BootGateState extends State<_BootGate> {
               ],
             ),
           ),
-          child: const Center(
-            child: _LogoRevealSplash(),
-          ),
+          child: const Center(child: _GifSplash()),
         ),
       ),
     );
   }
 }
 
-class _LogoRevealSplash extends StatefulWidget {
-  const _LogoRevealSplash();
-
-  @override
-  State<_LogoRevealSplash> createState() => _LogoRevealSplashState();
-}
-
-class _LogoRevealSplashState extends State<_LogoRevealSplash>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  ui.Image? _image;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1250),
-    )..repeat();
-    _loadImage();
-  }
-
-  Future<void> _loadImage() async {
-    final data = await rootBundle.load('assets/splash/logo_big.png');
-    final bytes = data.buffer.asUint8List();
-    final codec = await ui.instantiateImageCodec(bytes);
-    final frame = await codec.getNextFrame();
-    if (!mounted) return;
-    setState(() => _image = frame.image);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
+class _GifSplash extends StatelessWidget {
+  const _GifSplash();
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     final screenWidth = MediaQuery.sizeOf(context).width;
-    final targetWidth = (screenWidth * 0.98).clamp(340.0, 980.0).toDouble();
-    final ratio = _image == null
-        ? (1024.0 / 512.0)
-        : (_image!.width / _image!.height);
+    final targetWidth = (screenWidth * 0.82).clamp(260.0, 640.0).toDouble();
     return SizedBox(
       width: targetWidth,
-      child: AspectRatio(
-        aspectRatio: ratio,
-        child: AnimatedBuilder(
-          animation: _controller,
-          builder: (_, child) {
-            return CustomPaint(
-              painter: _LogoRevealPainter(
-                image: _image,
-                progress: _controller.value,
-                tint: cs.primary,
-              ),
-              child: child,
-            );
-          },
-          child: const SizedBox.expand(),
-        ),
+      child: Image.asset(
+        'assets/splash/logo_header.gif',
+        fit: BoxFit.contain,
+        gaplessPlayback: true,
       ),
     );
-  }
-}
-
-class _LogoRevealPainter extends CustomPainter {
-  final ui.Image? image;
-  final double progress;
-  final Color tint;
-
-  const _LogoRevealPainter({
-    required this.image,
-    required this.progress,
-    required this.tint,
-  });
-
-  Path _maskPath(Size size) {
-    final w = size.width;
-    final h = size.height;
-    return Path()
-      ..moveTo(w * 0.12, -h * 0.24)
-      ..cubicTo(w * 0.13, -h * 0.08, w * 0.14, h * 0.12, w * 0.16, h * 0.30)
-      ..cubicTo(w * 0.25, h * 0.45, w * 0.30, h * 0.76, w * 0.40, h * 0.70)
-      ..cubicTo(w * 0.52, h * 0.62, w * 0.56, h * 0.24, w * 0.67, h * 0.30)
-      ..cubicTo(w * 0.78, h * 0.38, w * 0.83, h * 0.66, w * 0.90, h * 0.70);
-  }
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (image == null) return;
-
-    final path = _maskPath(size);
-    final metric = path.computeMetrics().first;
-    final revealLen = metric.length * progress;
-    final brushRadius = size.shortestSide * 0.34;
-
-    // Собираем "кисть" как Path из окружностей вдоль кривой.
-    final revealPath = Path();
-    final steps = 220;
-    for (var i = 0; i <= steps; i++) {
-      final d = revealLen * (i / steps);
-      final tangent = metric.getTangentForOffset(d);
-      if (tangent != null) {
-        revealPath.addOval(
-          Rect.fromCircle(center: tangent.position, radius: brushRadius),
-        );
-      }
-    }
-
-    // Рендерим картинку только внутри reveal-path (без saveLayer/srcIn).
-    canvas.save();
-    canvas.clipPath(revealPath);
-    paintImage(
-      canvas: canvas,
-      rect: Offset.zero & size,
-      image: image!,
-      fit: BoxFit.contain,
-      filterQuality: FilterQuality.high,
-    );
-    canvas.restore();
-  }
-
-  @override
-  bool shouldRepaint(covariant _LogoRevealPainter oldDelegate) {
-    return oldDelegate.progress != progress || oldDelegate.image != image;
   }
 }

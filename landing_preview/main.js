@@ -123,7 +123,7 @@ async function loadReleaseMetrics() {
     const res = await fetch('https://api.github.com/repos/VladosFlexXx/imes_app/releases/latest');
     if (!res.ok) return;
     const r = await res.json();
-    const version = r.tag_name || 'v0.3.4';
+    const version = r.tag_name || 'latest';
     const assets = r.assets || [];
     const downloads = assets.reduce((sum, a) => sum + (a.download_count || 0), 0);
     const apkAsset = assets.find((a) => (a.name || '').toLowerCase().endsWith('.apk'));
