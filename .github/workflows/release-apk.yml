@@ -80,7 +80,7 @@ jobs:
       - name: Upload APK artifact (for Beta / manual runs)
         uses: actions/upload-artifact@v4
         with:
-          name: EIOS-APK-${{ github.ref_name }}
+          name: IMES-APK-${{ github.ref_name }}
           path: artifacts/*
 
       # Release: при пуше тега создаём/обновляем GitHub Release и загружаем APK
