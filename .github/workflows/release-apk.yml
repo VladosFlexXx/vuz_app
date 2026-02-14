@@ -66,21 +66,21 @@ jobs:
       - name: Prepare artifacts
         run: |
           mkdir -p artifacts
-          cp build/app/outputs/flutter-apk/app-release.apk artifacts/EIOS-${{ github.ref_name }}.apk
+          cp build/app/outputs/flutter-apk/app-release.apk artifacts/MyIMES-${{ github.ref_name }}.apk
 
       - name: Build split-per-abi APKs (optional)
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.split_per_abi == 'true' }}
         run: |
           flutter build apk --release --split-per-abi --build-number ${{ github.run_number }}
-          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk artifacts/EIOS-${{ github.ref_name }}-arm64-v8a.apk
-          cp build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk artifacts/EIOS-${{ github.ref_name }}-armeabi-v7a.apk
-          cp build/app/outputs/flutter-apk/app-x86_64-release.apk artifacts/EIOS-${{ github.ref_name }}-x86_64.apk
+          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk artifacts/MyIMES-${{ github.ref_name }}-arm64-v8a.apk
+          cp build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk artifacts/MyIMES-${{ github.ref_name }}-armeabi-v7a.apk
+          cp build/app/outputs/flutter-apk/app-x86_64-release.apk artifacts/MyIMES-${{ github.ref_name }}-x86_64.apk
 
       # APK всегда можно скачать из Actions
       - name: Upload APK artifact (for Beta / manual runs)
         uses: actions/upload-artifact@v4
         with:
-          name: IMES-APK-${{ github.ref_name }}
+          name: MyIMES-APK-${{ github.ref_name }}
           path: artifacts/*
 
       # Release: при пуше тега создаём/обновляем GitHub Release и загружаем APK
